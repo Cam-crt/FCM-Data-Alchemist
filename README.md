@@ -191,7 +191,7 @@ A three-scenario analysis (optimistic / normal / pessimistic rework costs) teste
 
 **Baseline:** Mean loss rate across all tasks.
 
-**Methods:** Two-sample t-tests on `rework_hours`, `rework_ratio`, `revisions`, `error_rate` between AI-assisted and non-assisted groups. Loss rate (`is_loss`) compared across `task_type`, `team`, `seniority`, and `client_tier` (bar charts). 
+**Methods:** Two-sample t-tests[^2] on `rework_hours`, `rework_ratio`, `revisions`, `error_rate` between AI-assisted and non-assisted groups. Loss rate (`is_loss`) compared across `task_type`, `team`, `seniority`, and `client_tier` (bar charts). 
 Loss rate by `ai_group` plotted and computed under all three rework cost scenarios.
 
 **Evaluation metrics:** `is_loss`, `rework_ratio`, `error_rate`, `revisions_rate`, `cost_ratio`
@@ -202,7 +202,7 @@ Loss rate by `ai_group` plotted and computed under all three rework cost scenari
 
 **Baseline:** Delivery time, SLA breach rate, and outcome score for non-AI-assisted tasks.
 
-**Methods:** Two-sample t-tests on `hours_spent` and `delivery_time`; chi-square test on `sla_breach` (binary variable). 
+**Methods:** Two-sample t-tests[^3] on `hours_spent` and `delivery_time`; chi-square test on `sla_breach` (binary variable). 
 A composite `quality_index` (normalised outcome score minus normalised rework ratio) and `speed_index` (1 minus normalised SLA ratio) were computed per task and averaged by `ai_group` to separate the two dimensions visually.
 
 **Evaluation metrics:** `delivery_time`, `sla_breach`, `outcome_score`, `quality_index`, `speed_index`
@@ -214,7 +214,7 @@ A composite `quality_index` (normalised outcome score minus normalised rework ra
 
 **Baseline:** Average profit margin of tasks in the 0–15% AI usage bucket.
 
-**Methods:** Tasks were sorted by `ai_usage_pct` and a rolling average (window = 500, centred) of `profit_margin` was computed to smooth noise and expose the underlying trend. 
+**Methods:** Tasks were sorted by `ai_usage_pct` and a rolling average [^4] (window = 500, centred) of `profit_margin` was computed to smooth noise and expose the underlying trend. 
 The negative-margin zone was identified and bounded with vertical markers. No parametric assumptions were required.
 
 **Evaluation metrics:** `profit_margin` (rolling average over `ai_usage_pct`)
@@ -346,3 +346,11 @@ This analysis shows that AI adoption in professional task workflows has a clear 
 Several questions remain open. First, the dataset comes from a single company, which limits the generalisability of the findings: industry-specific dynamics, team culture, and client mix may all influence the results in ways that cannot be separated here. Second, the analysis is observational — no causal claims can be made about AI driving margin improvements, as confounders such as task selection bias (more structured, AI-friendly tasks may simply be assigned to AI users) cannot be ruled out. Third, the `outcome_score` metric may not fully capture output quality, particularly for creative or complex tasks where quality is harder to quantify. Natural next steps include building predictive models (e.g. regression or classification) to identify which task characteristics most reliably predict losses; conducting a longitudinal analysis to track whether AI adoption effects strengthen over time as workers accumulate experience; and designing a controlled experiment or quasi-experimental setup (e.g. difference-in-differences) to move closer to causal identification of AI's true productivity effect.
 
 ## Section 6 Prompt AI
+
+[^1]
+
+[^2]
+
+[^3]
+
+[^4]
