@@ -2,21 +2,18 @@
 
 **Course:** Machine Learning — A.A. 2025/26  
 **Team Members:**
-- [Student Name 1] — ID: [XXXXXXX]
-- [Student Name 2] — ID: [XXXXXXX]
-- [Student Name 3 / Captain] — ID: [XXXXXXX]
+- Matilde Marucci / Captain — ID: 815501
+- Camilla Cortopassi — ID: 812211
+- Francesco Cocchi — ID: 812141
 
-**GitHub Repository:** [link to repo]
 
----
+## Section 1 — Introduction
 
-## [Section 1] Introduction
-
-This project investigates the financial and operational impact of AI adoption in a digital agency context. The central question is deceptively simple: *when a company starts using AI tools to complete tasks faster, does it actually earn more?*
+This project investigates the financial and operational impact of AI adoption in a digital agency context. The central question is: *when a company starts using AI tools to complete tasks faster, does it actually earn more?*
 
 The dataset covers 3,248 tasks across multiple teams, task types, and pricing models. Each task includes information about hours worked, rework, quality scores, revenue, cost, and AI usage intensity. The unit of analysis is the single task or deliverable.
 
-The phenomenon we are studying is what we call the **AI Productivity Paradox**: companies that adopt AI produce more in less time, yet their margins often stay flat or decline. This happens because efficiency gains are offset by hidden costs — unstable quality, increased rework, and pricing models that no longer reflect the value produced.
+The phenomenon we are studying is what we call the **AI Productivity Paradox**: companies that adopt AI produce more in less time, yet their margins often stay flat or decline. This happens because efficiency gains are offset by hidden costs: unstable quality, increased rework and pricing models that no longer reflect the value produced.
 
 Our analysis is structured around four research questions:
 1. **RQ1** — Where is value created? Which tasks and contexts benefit most from AI?
@@ -26,195 +23,326 @@ Our analysis is structured around four research questions:
 
 We also address three advanced questions on speed-quality trade-offs, rework thresholds, and pricing model sustainability.
 
-> **Note — Partial Submission:** RQ1 and the full data pipeline (cleaning, feature engineering, EDA) are complete and finalized. RQ2, RQ3, RQ4, and the Advanced Questions contain preliminary results that are still being refined. Section 4 and Section 5 will be updated in the final submission.
+## Section 2 Methods
 
----
+The analysis follows the structure of the notebook `main.ipynb`, organised into eight sequential steps.
 
-## [Section 2] Methods
+### 2.1 Setup and Import
 
-### 2.1 Dataset and Preprocessing
+The following Python libraries are used throughout the analysis:
 
-The dataset is a single CSV file (`ai_productivity_dataset_final.csv`) containing task-level records. It is intentionally imperfect — missing values, label inconsistencies, and logical contradictions are all present, mimicking real operational data.
+| Library | Purpose |
+|---|---|
+| `numpy` | Numerical operations |
+| `pandas` | Data manipulation and aggregation |
+| `matplotlib` | Base plotting |
+| `seaborn` | Statistical visualisations |
+| `scipy` | Statistical tests (t-test, chi-square, Pearson) |
+| `missingno` | Missing value visualisation |
 
-The preprocessing pipeline follows these steps:
-
-1. **Categorical cleaning** — Column values in `team`, `task_type`, and related fields were standardized: lowercasing, whitespace stripping, typo correction (e.g., `contennt` → `content`, `desgn` → `design`), and merging of low-frequency subcategories into parent categories.
-2. **Date conversion** — Columns `created_at`, `delivered_at`, and `updated_at` were converted from strings to `datetime` objects to enable time-based feature engineering.
-3. **Missing value treatment** — Numerical columns with missing values were imputed using the **median** (MCAR assumption). The `delivered_at` column had a distinct missingness pattern and was left without imputation, as the cause was not fully diagnosed.
-4. **Inconsistency resolution** — Logical inconsistencies were identified and corrected: negative `billable_hours` (17 cases, set to 0), mismatches between `ai_assisted` flag and `ai_usage_pct > 0` (685 cases, flag corrected), and date ordering violations.
-
-### 2.2 Feature Engineering
-
-We created several derived variables to operationalize the research questions:
-
-**AI intensity grouping:**
-- `ai_group`: `ai_usage_pct` binned into five ordered categories (0–15%, 15–30%, 30–50%, 50–75%, 75–100%). This allowed pattern detection that was not visible in raw continuous form.
-- `ai_complexity_interaction`: product of `ai_usage_pct` and `task_complexity_score`, capturing whether AI impact depends on task difficulty.
-
-**Cost and efficiency metrics:**
-- `rework_ratio`: share of total hours spent on corrections (`rework_hours / hours_spent`)
-- `cost_ratio`: total cost relative to revenue (`cost / revenue`); values above 1 indicate a loss-making task
-- `efficiency`: ratio of billable hours to hours spent
-
-**Error and revision metrics:**
-- `error_rate`: number of errors per hour spent
-- `revisions_rate`: number of revisions per hour spent
-
-**Profitability metrics:**
-- `profit_margin`: retained revenue fraction (`profit / revenue`)
-- `is_loss`: binary flag for tasks where `profit < 0`
-- `profit_per_hour`: profit generated per hour of work
-
-**Quality and speed indices (for RQ3):**
-- `quality_index`: composite of normalized `outcome_score` and inverted `rework_ratio`
-- `speed_index`: based on `sla_ratio = delivery_time / sla_days`; lower values mean faster delivery relative to deadline
-
-### 2.3 Analytical Approach
-
-This is a **descriptive and exploratory analysis**, not a supervised learning problem. There is no model to train or tune. The goal is to understand mechanisms — why margins change, when losses occur, for whom AI creates or destroys value.
-
-The main analytical tools are:
-
-- **Grouped comparisons** across `ai_group`, `task_type`, `team`, `pricing_model`, and `client_tier`
-- **Pearson correlations** to measure the linear relationship between AI usage and derived metrics
-- **Polynomial regression (degree 2)** on `ai_usage_pct` vs `profit_margin` to detect non-linear patterns and potential inflection points
-- **Loss rate analysis**: proportion of `is_loss == True` by group
-
-All visualizations are generated directly from the notebook code.
-
-### 2.4 Environment
-
-The analysis was conducted in Python 3. Key libraries:
-
-```
-numpy
-pandas
-matplotlib
-seaborn
-scipy
-missingno
-```
-
-To recreate the environment:
+To reproduce the environment, run one of the following commands from the project root:
 
 ```bash
-pip install numpy pandas matplotlib seaborn scipy missingno
+# Using conda
+conda env export > environment.yml
+conda env create -f environment.yml
+
+# Using pip
+pip freeze > requirements.txt
+pip install -r requirements.txt
 ```
 
-A `requirements.txt` / `environment.yml` file is included in the repository root.
+### 2.2 Data Loading and Initial Inspection
 
----
+The raw CSV (`ai_productivity_dataset_final.csv`) is loaded into `raw_df`, which is never modified. All cleaning and transformations are applied to `final_df`, a working copy. 
 
-## [Section 3] Experimental Design
+Initial inspection via `.info()`, `.describe()`, and categorical summaries revealed several data quality issues: extreme outliers in `hours_spent` and `profit`, negative values in `billable_hours`, missing values across multiple columns, and non-unique `task_id` entries.
 
-Because this is an exploratory analysis rather than a predictive modeling project, the concept of "experiment" is interpreted as a structured investigation of a specific research question, where we define a comparison group, a metric, and an expected direction based on the business context.
+### 2.3 Categorical Variable Cleaning
 
-### Experiment 1 — Where is value created? (RQ1)
+Two columns required standardisation before analysis.
 
-**Purpose:** Determine whether higher AI usage is associated with better financial performance at the task level.
+#### `team`:
+ values were lowercased, stripped of whitespace, and corrected for typos (`contennt` → `content`, `desgn` → `design`)
+ the low-frequency `paid_media` category was merged into `media`. 
+ 
+#### `task_type`
+ similar cleaning was applied (e.g. `relese` → `release`, `repport` → `report`) and low-frequency subcategories were merged into their parent categories (e.g. `blog_article` → `article`, `creative` → `design`). 
+ 
+#### `jira_ticket` 
+ was excluded from analysis as it is a pure identifier with ~10% missing values.
 
-**Baseline:** The null hypothesis is that `ai_group` has no effect on `profit_margin`. If AI were irrelevant, we would expect the metric to be flat across all usage groups.
+#### the others 
+ `client_tier`, `seniority`, `pricing_model`, `task_status`, `workflow_stage`, `content_version`, `legacy_ai_flag`, `scope_change_flag`, `sla_breach`, `deadline_pressure` were inspected and required no cleaning. 
+ 
+![Countplot of team variable before and after cleaning](images/fig_team_cleaning.png)
+*Figure 1 – Distribution of `team` before and after cleaning (Section 3.1)*
 
-**Evaluation metrics:** Mean and median `profit_margin` by `ai_group`; loss rate (`is_loss`) by `ai_group`. We also check whether the pattern holds within specific `task_type` and `team` combinations to test for heterogeneity.
+![Countplot of task_type variable before and after cleaning](images/fig_tasktype_cleaning.png)
+*Figure 2 – Distribution of `task_type` before and after cleaning (Section 3.2)*
 
-### Experiment 2 — Where are losses incurred? (RQ2)
+### 2.4 Date Variables Conversion
 
-**Purpose:** Identify which structural factors (task type, team, seniority, client tier, pricing model) are most associated with loss-making tasks.
+The columns `created_at`, `delivered_at`, and `updated_at` were stored as strings and converted to datetime objects using `pd.to_datetime()` with `errors="coerce"` to safely handle unparseable values (converted to `NaT`).
 
-**Baseline:** A uniform loss rate across all categories. Any group that deviates significantly from the overall loss rate (~22%) is flagged as a risk factor or a protective factor.
+### 2.5 Missing Value Treatment
 
-**Evaluation metrics:** `loss_rate` by `task_type`, `team`, `employee_seniority`, `client_tier`; `cost_ratio` by `ai_group`; `error_rate` and `revisions_rate` by `ai_group`.
+Missing values were treated column by column, each with a justified strategy:
 
-### Experiment 3 — AI → quality or just speed? (RQ3)
+- **`brief_quality_score`** (~2.1% missing): MCAR confirmed via group comparison; imputed with column median.
+- **`sla_days`**: MCAR confirmed; imputed with column median.
+- **`ai_usage_pct`** (~4.5% missing): MCAR confirmed. Notably, tasks with `legacy_ai_flag == True` showed median `ai_usage_pct` of 0.34%, confirming the flag reflects older-generation AI tools, not zero usage. Imputed with column median.
+- **`rework_hours`** (~2.2% missing): Rows where `errors == 0` and `revisions == 0` were imputed with zero; remaining missing values imputed with column median.
+- **`outcome_score`**: MCAR confirmed via `task_status` and `workflow_stage`; imputed with column median.
+- **`billable_hours`** (~2.5% missing): Group-based median imputation by `pricing_model` × `task_type` to preserve business structure.
+- **`delivered_at`**: Left unimputed at this stage; the few tasks marked as delivered but missing `delivered_at` were handled later in feature engineering using mean delivery duration.
 
-**Purpose:** Decompose the effect of AI into two separate dimensions — output quality and delivery speed — and measure each independently.
+![Missing value matrix](images/fig_missing_matrix.png)
+*Figure 3 – Missing value pattern across all columns (Section 5, `missingno` matrix)*
 
-**Baseline:** The implicit assumption that "AI makes work better and faster." We test whether this is actually supported by the data.
+### 2.6 Exploratory Data Analysis (EDA)
 
-**Evaluation metrics:** Pearson correlation between `ai_usage_pct` and `quality_index`; Pearson correlation between `ai_usage_pct` and `speed_index`. We consider a correlation meaningful only if |r| > 0.1 and p < 0.05.
+The EDA phase examined distributions and inter-variable relationships. 
+A correlation heatmap over all numerical variables identified key patterns: 
+- strong positive correlations between `billable_hours` and `cost` (0.55), `ai_usage_pct` and `ai_assisted` (0.64), and `revenue` and `profit` (0.77); 
+- notable negative correlations between `sla_days` and `sla_breach` (-0.62), `errors` and `outcome_score` (-0.47), and `cost` and `profit` (-0.41). 
 
-### Experiment 4 — When does AI become harmful? (RQ4)
+Histogram analysis showed strong right-skewness in `hours_spent`, `billable_hours`, `rework_hours`, `revenue`, and `cost`; a roughly left-normal distribution in `outcome_score`; and a bimodal distribution in `profit` suggesting structurally different task segments. 
 
-**Purpose:** Detect whether there is a usage threshold beyond which AI adoption starts to damage profit margin.
+Categorical distributions were examined via countplots, and boxplots were used to compare `ai_usage_pct` and `outcome_score` across all categorical variables.
 
-**Baseline:** A linear relationship between `ai_usage_pct` and `profit_margin`, where more AI is always better. If a threshold exists, a degree-2 polynomial regression should show a negative quadratic coefficient.
+![Correlation heatmap](images/fig_correlation_heatmap.png)
+*Figure 4 – Correlation heatmap of all numerical variables (Section 6)*
 
-**Evaluation metrics:** Polynomial regression coefficients and the fitted curve shape; mean `profit_margin` by `ai_group` and `task_type` combination to detect task-specific reversals.
+![Distribution of key numerical variables](images/fig_numerical_distributions.png)
+*Figure 5 – Histograms of `hours_spent`, `revenue`, `ai_usage_pct`, `rework_hours`, `outcome_score`, `cost`, `profit` (Section 6.1)*
 
----
+### 2.7 Feature Engineering
 
-## [Section 4] Results
+This step covered inconsistency fixes, AI-related variable resolution, and the creation of derived metrics.
 
-> **Note:** The results below reflect the current state of the analysis. RQ1 is fully concluded. RQ2, RQ3, and RQ4 contain preliminary findings that may be revised.
+**Inconsistency fixes:**
+- Negative `billable_hours` values were replaced with the column median.
+- 14 rows where `created_at > delivered_at` were corrected by swapping the two date columns.
+- `sla_breach` was fully recomputed as `delivery_time > sla_days` after a consistency check revealed ~1% mismatch with the original variable.
+- `delivered_at` was imputed for the 38 remaining missing cases using mean delivery duration.
+- `delivery_time` (days from creation to delivery) was computed as a derived variable.
 
-### RQ1 — Where is value created?
+**AI variable resolution:**
+- `ai_usage_pct` was binned into five groups (`ai_group`): 0–15%, 15–30%, 30–50%, 50–75%, 75–100%.
+- 685 rows had `ai_assisted == False` but positive `ai_usage_pct`. These were resolved using a median threshold: rows above the threshold were reclassified as `ai_assisted = True`; rows at or below were set to `ai_usage_pct = 0`.
+- `ai_complexity` was created as the product of `task_complexity_score` and `ai_usage_pct`.
 
-AI adoption is clearly associated with higher financial performance. Profit margin increases nearly monotonically with AI usage intensity: tasks in the 75–100% AI group have a median profit margin of **0.48**, compared to **0.22** for tasks in the 0–15% group. The loss rate follows the opposite pattern, dropping from **30%** at low adoption to **12%** at high adoption.
+![AI group distribution](images/fig_ai_group_distribution.png)
+*Figure 6 – Distribution of tasks across `ai_group` bins after refinement (Section 7.2.1)*
 
-One consistent anomaly across all analyses is the **15–30% AI group**, which performs worse than the 0–15% group across multiple metrics. This "partial adoption trap" suggests that introducing AI without fully integrating it adds overhead without delivering efficiency gains.
+**Derived metrics:**
 
-Value creation is not uniform across task types. Article and design tasks respond well to AI; ticket and release tasks remain risky regardless of AI intensity.
-
-| AI Group | Mean Profit Margin | Loss Rate |
+| Feature | Formula | Interpretation |
 |---|---|---|
-| 0–15% | ~0.22 | ~30% |
-| 15–30% | ~0.18 | ~32% |
-| 30–50% | ~0.23 | ~25% |
-| 50–75% | ~0.31 | ~18% |
-| 75–100% | ~0.48 | ~12% |
+| `rework_ratio` | `rework_hours / (hours_spent + rework_hours)` | Share of total time spent on corrections |
+| `cost_ratio` | `cost / revenue` | Cost absorbed per unit of revenue |
+| `efficiency` | `billable_hours / hours_spent` | Share of time that is billable |
+| `error_rate` | `errors / hours_spent` | Errors per hour worked |
+| `revisions_rate` | `revisions / hours_spent` | Revisions per hour worked |
+| `profit_margin` | `profit / revenue` | Net margin retained per task |
+| `profit_per_hour` | `profit / hours_spent` | Profitability per hour worked |
+| `is_loss` | `1 if profit < 0` | Binary flag for loss-making tasks |
 
-*Table 1 — Profit margin and loss rate by AI usage group. Values are approximate and will be updated with final figures in the complete submission.*
+Three rework cost scenarios (optimistic ×0.5, normal ×1.0, pessimistic ×1.5) were also computed to model the financial sensitivity of rework exposure.
 
-### RQ2 — Where are losses incurred? *(preliminary)*
+### 2.8 Drop Identifier Columns
 
-Loss-making tasks are not defined by high rework or poor quality — they are defined by a structural **pricing mismatch**. Loss tasks have a `cost_ratio` averaging 1.6x their revenue, but they have slightly lower rework and similar or better output quality compared to profitable tasks.
+The columns `task_id`, `jira_ticket`, `created_by`, `project_id`, and `missing_flag` carry no analytical or predictive value and were dropped from `final_df` before analysis.
 
-The highest-risk combinations are:
-- **Task type:** tickets and releases
-- **Team:** seo and content
-- **Seniority:** senior employees (loss rate ~45%), likely because their higher hourly cost is not priced into deliverables
-- **Client tier:** low-tier clients
+**Pipeline overview:**
 
-### RQ3 — AI → quality or just speed? *(preliminary)*
+```
+Raw CSV
+  └─► Data Inspection & Duplicate Removal
+        └─► Categorical Cleaning (team, task_type)
+              └─► Date Conversion
+                    └─► Missing Value Treatment
+                          └─► EDA
+                                └─► Feature Engineering
+                                      └─► Drop Identifiers
+                                            └─► Research Questions (RQ1–4, Advanced)
+```
 
-Neither. AI does not meaningfully improve quality or speed.
 
-- `quality_index` vs `ai_usage_pct`: r = −0.025, p = 0.157 → no relationship
-- `speed_index` vs `ai_usage_pct`: r = 0.054, p = 0.002 → statistically significant but negligible (AI explains < 0.3% of speed variance)
+## Section 3 Experimental Design
 
-AI creates value exclusively through cost efficiency — reducing waste and cost overruns — not through better outputs or faster delivery.
+### RQ1 – Where is value created?
 
-### RQ4 — When does it become negative? *(preliminary)*
+**Purpose:** Determine whether AI-assisted tasks generate higher profit margins and better cost efficiency than non-assisted ones.
 
-At the aggregate level, AI never becomes harmful to margin. The polynomial regression (degree 2) shows both coefficients positive, meaning the curve accelerates upward and never turns downward.
+**Baseline:** Mean profit margin and cost ratio across the full dataset.
 
-The only exception: **article tasks at 75–100% AI usage** show a mean profit margin of −0.15. This is the only task-type and AI-intensity combination where heavy AI adoption is associated with negative outcomes, likely because AI-generated text requires more revision cycles.
+**Methods:** Two-sample t-tests[^1] comparing AI-assisted vs. non-assisted groups on `profit_margin`, `profit_per_hour`, `cost_ratio`, `efficiency`, and `revenue`. 
+Results reported at α = 0.10, 0.05, and 0.01. Profitability was further broken down by `ai_group` (bar chart), and by the interaction of `task_type` × `ai_group` and `team` × `ai_group` (heatmaps). 
+A three-scenario analysis (optimistic / normal / pessimistic rework costs) tested the robustness of the findings.
 
-The real risk threshold is not "too much AI" — it is **partial adoption (15–30%)**, consistently the worst-performing group across all metrics.
+**Evaluation metrics:** `profit_margin`, `cost_ratio`, `profit_per_hour`
 
-![Placeholder — Profit Margin by AI Group and Task Type](images/profit_margin_ai_group_task_type.png)
-*Figure 1 — Mean profit margin by AI group and task type (generated from notebook code).*
+
+### RQ2 – Where are losses incurred?
+
+**Purpose:** Identify which task types, teams, seniority levels, and client tiers are most exposed to losses, and assess whether AI usage reduces that exposure.
+
+**Baseline:** Mean loss rate across all tasks.
+
+**Methods:** Two-sample t-tests on `rework_hours`, `rework_ratio`, `revisions`, `error_rate` between AI-assisted and non-assisted groups. Loss rate (`is_loss`) compared across `task_type`, `team`, `seniority`, and `client_tier` (bar charts). 
+Loss rate by `ai_group` plotted and computed under all three rework cost scenarios.
+
+**Evaluation metrics:** `is_loss`, `rework_ratio`, `error_rate`, `revisions_rate`, `cost_ratio`
+
+### RQ3 – AI → quality or just speed?
+
+**Purpose:** Disentangle whether AI's main effect is faster delivery, higher quality output, or both.
+
+**Baseline:** Delivery time, SLA breach rate, and outcome score for non-AI-assisted tasks.
+
+**Methods:** Two-sample t-tests on `hours_spent` and `delivery_time`; chi-square test on `sla_breach` (binary variable). 
+A composite `quality_index` (normalised outcome score minus normalised rework ratio) and `speed_index` (1 minus normalised SLA ratio) were computed per task and averaged by `ai_group` to separate the two dimensions visually.
+
+**Evaluation metrics:** `delivery_time`, `sla_breach`, `outcome_score`, `quality_index`, `speed_index`
+
+
+### RQ4 – When does AI become negative?
+
+**Purpose:** Identify the critical AI usage threshold below which partial adoption hurts profit margins more than no adoption at all.
+
+**Baseline:** Average profit margin of tasks in the 0–15% AI usage bucket.
+
+**Methods:** Tasks were sorted by `ai_usage_pct` and a rolling average (window = 500, centred) of `profit_margin` was computed to smooth noise and expose the underlying trend. 
+The negative-margin zone was identified and bounded with vertical markers. No parametric assumptions were required.
+
+**Evaluation metrics:** `profit_margin` (rolling average over `ai_usage_pct`)
+
+
+### Advanced RQ1 – Speed vs. Quality trade-off
+
+**Purpose:** Test whether faster delivery comes at the cost of lower output quality.
+
+**Baseline:** Null hypothesis of zero correlation between `speed_index` and `quality_index`.
+
+**Methods:** Pearson correlation between `speed_index` and `quality_index` across all tasks, with scatter plot and regression line overlay.
+
+**Evaluation metrics:** Pearson r, p-value
+
+
+### Advanced RQ2 – Rework threshold
+
+**Purpose:** Assess whether high rework ratio is a reliable predictor of profit margin erosion.
+
+**Baseline:** Null hypothesis of zero correlation between `rework_ratio` and `profit_margin`.
+
+**Methods:** Pearson correlation between `rework_ratio` and `profit_margin`, repeated under all three rework cost scenarios. Scatter plots with regression lines used to visualise the relationship and check for non-linearity.
+
+**Evaluation metrics:** Pearson r, p-value, `profit_margin` under three cost scenarios
+
+
+### Advanced RQ3 – Hourly pricing model sustainability
+
+**Purpose:** Determine under which conditions the hourly pricing model generates losses, and whether seniority and AI usage are the key drivers.
+
+**Baseline:** Profit margin of fixed and value-based pricing models.
+
+**Methods:** Six candidate loss drivers (`rework_ratio`, `error_rate`, `task_complexity_score`, `hours_spent`, `billable_hours`, `seniority`) compared between the hourly model and others using boxplots (numerical) or grouped bar charts (categorical). 
+The seniority signal was then decomposed into a three-panel chart of mean profit margin by `ai_group` for junior, mid, and senior workers under the hourly model.
+
+**Evaluation metrics:** `profit_margin` by `pricing_model`, `seniority`, `ai_group`
+
+## Section 4 Results
+
+### Main Findings
+
+**RQ1 – Value creation:** AI-assisted tasks show a higher average profit margin (0.16 vs. 0.08) and lower cost ratio (0.84 vs. 0.92), both significant at the 10% level. Profit margin increases nearly monotonically with AI usage intensity, peaking at ~34% for the 75–100% group. Tasks in the 15–30% usage range are the exception, showing a dip below even the 0–15% group, consistent with a transition-phase effect.
+
+![Profit margin by AI group](images/fig_rq1_profit_margin_ai_group.png)
+*Figure 7 – Average profit margin by `ai_group` (RQ1)*
+
+![Profit margin by task type and AI group heatmap](images/fig_rq1_heatmap_tasktype.png)
+*Figure 8 – Mean profit margin by `task_type` × `ai_group` (RQ1)*
+
+![Profit margin by team and AI group heatmap](images/fig_rq1_heatmap_team.png)
+*Figure 9 – Mean profit margin by `team` × `ai_group` (RQ1)*
+
+![Profit margin scenario comparison](images/fig_rq1_scenario_comparison.png)
+*Figure 10 – Profit margin by `ai_group` under optimistic / normal / pessimistic rework cost scenarios (RQ1)*
 
 ---
 
-## [Section 5] Conclusions
+**RQ2 – Losses:** Rework hours and rework ratio are significantly higher in AI-assisted tasks (p < 0.01), but loss rate falls monotonically with AI usage: from ~30% in the 0–15% group to ~12% in the 75–100% group. Senior workers lose on 45% of tasks vs. 11% for juniors, likely reflecting task allocation patterns rather than individual performance.
 
-> **Note:** This is a partial conclusions section. It will be fully rewritten once RQ2–RQ4 analyses are finalized.
+![Loss rate by category](images/fig_rq2_loss_rate_categories.png)
+*Figure 11 – Loss rate by `task_type`, `team`, `seniority`, and `client_tier` (RQ2)*
 
-### Summary of findings so far
+![Loss rate by AI group](images/fig_rq2_loss_rate_ai_group.png)
+*Figure 12 – Loss rate by `ai_group` (RQ2)*
 
-The data tells a consistent story across all four research questions. AI creates real financial value in digital agency work, but the mechanism is not what most people expect. AI does not make work better (quality_index is flat across all groups) and does not make work measurably faster (speed_index correlation r = 0.054). Instead, AI reduces the frequency and severity of cost overruns — it makes the cost structure more predictable, which directly improves profit margins.
+![Cost ratio by AI group](images/fig_rq2_cost_ratio_ai_group.png)
+*Figure 13 – Cost ratio by `ai_group` (RQ2)*
 
-The most important structural finding is about pricing, not AI. Loss-making tasks look operationally similar to profitable ones: they have less rework, similar quality, and similar error rates. The only difference is that their costs exceed their revenue. This points to a pricing problem — tasks are being billed at rates that do not cover their actual cost, regardless of how much AI is used. The hourly pricing model is the clearest manifestation of this: it has the highest loss rate (33.3%) and the lowest profit per hour (median ~45), and AI cannot fix it.
+---
 
-### Open questions and next steps
+**RQ3 – Quality vs. Speed:** AI-assisted tasks are delivered faster (4.43 vs. 4.91 days, p < 0.01) and breach SLAs less often (38% vs. 47%, p < 0.01). However, `outcome_score` shows no statistically significant difference (p = 0.597). The `quality_index` declines with AI usage while `speed_index` remains stable, suggesting AI accelerates delivery without improving — and possibly slightly reducing — output quality.
 
-This analysis has several limitations that future work should address.
+![Quality index vs speed index by AI group](images/fig_rq3_quality_speed_index.png)
+*Figure 14 – Quality index vs. speed index by `ai_group` (RQ3)*
 
-First, causality cannot be established. We observe that high AI usage correlates with higher margins, but we cannot rule out selection effects — more profitable task types or more experienced teams may simply be more likely to adopt AI heavily. A controlled experiment or a difference-in-differences approach with time-series data would be needed to make causal claims.
+---
 
-Second, the `delivered_at` missingness was not fully resolved. If missing delivery dates are systematically associated with specific task outcomes, this could introduce bias in the speed-related analyses (RQ3).
+**RQ4 – Critical threshold:** The rolling average of profit margin briefly turns negative around 20% AI usage. Below that zone, low-AI tasks hold a stable ~6% margin; above 30%, margins recover and grow to ~30% at high usage. Partial adoption (roughly 15–30%) is the riskiest configuration.
 
-Third, the analysis is entirely aggregate — it treats the 3,248 tasks as independent observations. A more granular approach would account for team-level and project-level effects using mixed models or hierarchical regression.
+![Rolling profit margin threshold](images/fig_rq4_rolling_threshold.png)
+*Figure 15 – Rolling average profit margin vs. `ai_usage_pct` with negative zone highlighted (RQ4)*
 
-Finally, several variables that would be needed for a complete picture are absent from the dataset: client satisfaction scores beyond `outcome_score`, employee AI training levels, task brief quality at submission, and actual time-to-value for the client. These would allow a richer model of when and for whom AI adoption translates into sustainable financial performance.
+---
+
+**Advanced RQ1:** Pearson r = 0.002 (p = 0.891) — no trade-off between speed and quality. The two dimensions are independent.
+
+![Speed vs quality scatter](images/fig_adv_rq1_speed_quality_scatter.png)
+*Figure 16 – Scatter plot of `speed_index` vs. `quality_index` with regression line (Advanced RQ1)*
+
+---
+
+**Advanced RQ2:** Pearson r ≈ 0.008 (p = 0.638) in the base scenario. Rework ratio alone is not a reliable financial risk indicator; margin protection should focus on `cost_ratio` and pricing.
+
+![Rework ratio vs profit margin scenarios](images/fig_adv_rq2_rework_scenarios.png)
+*Figure 17 – Rework ratio vs. profit margin under three cost scenarios (Advanced RQ2)*
+
+---
+
+**Advanced RQ3:** The hourly pricing model is structurally unsustainable for senior workers below 75% AI usage. Junior workers never collapse; mid-level workers go negative between 15–75% AI usage.
+
+![Hourly model seniority breakdown](images/fig_adv_rq3_seniority_ai_group.png)
+*Figure 18 – Mean profit margin by `ai_group` for junior / mid / senior under the hourly pricing model (Advanced RQ3)*
+
+---
+
+### Summary Table – Profit Margin by AI Usage Group
+
+| AI Usage Group | Mean Profit Margin | Mean Loss Rate |
+|---|---|---|
+| 0–15% | ~0.08 | ~30% |
+| 15–30% | ~0.025 | ~28% |
+| 30–50% | ~0.15 | ~22% |
+| 50–75% | ~0.23 | ~18% |
+| 75–100% | ~0.34 | ~12% |
+
+*All figures are approximate; exact values are generated by the notebook.*
+
+---
+
+## Section 5 Conclusions
+
+### Summary
+
+This analysis shows that AI adoption in professional task workflows has a clear and consistent positive effect on financial performance — but only when it is adopted at sufficient intensity. Tasks where AI is used for more than 50% of the work achieve profit margins two to four times higher than low-adoption tasks, and their loss rates are cut by more than half. The critical risk zone lies between 15% and 30% AI usage, where partial adoption introduces overhead and inconsistency without yet delivering efficiency gains. Speed is AI's most reliable benefit: AI-assisted tasks are delivered faster and breach SLAs less often, with no statistically significant impact on outcome scores. The hourly pricing model emerges as a structural vulnerability for senior workers, where AI-driven speed reduces billable hours and erodes margins — pointing to a need for pricing model redesign for that segment.
+
+### Limitations and Future Work
+
+Several questions remain open. First, the dataset comes from a single company, which limits the generalisability of the findings: industry-specific dynamics, team culture, and client mix may all influence the results in ways that cannot be separated here. Second, the analysis is observational — no causal claims can be made about AI driving margin improvements, as confounders such as task selection bias (more structured, AI-friendly tasks may simply be assigned to AI users) cannot be ruled out. Third, the `outcome_score` metric may not fully capture output quality, particularly for creative or complex tasks where quality is harder to quantify. Natural next steps include building predictive models (e.g. regression or classification) to identify which task characteristics most reliably predict losses; conducting a longitudinal analysis to track whether AI adoption effects strengthen over time as workers accumulate experience; and designing a controlled experiment or quasi-experimental setup (e.g. difference-in-differences) to move closer to causal identification of AI's true productivity effect.
+
+## Section 6 Prompt AI
