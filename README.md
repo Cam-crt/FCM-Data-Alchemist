@@ -350,7 +350,7 @@ I want to bin ai_usage_pct into groups to use it as a categorical variable in ba
 Prompt 2: 
 You suggested 4 buckets but there’s a lot of observations in the 0-25% and 25-50% range, wouldn’t it make more sense to split those further? I don’t want to lose detail there. Would unequal bucket sizes be an issue?
 
-### ROMPTS FOR VALUE METRICS:
+### PROMPTS FOR VALUE METRICS:
 
 Prompt 3: 
 I have a dataframe with several performance metrics and a bool column ai_assisted. I want to statistically test whether using AI has a significant effect on those metrics. What’s a good approach?
@@ -429,3 +429,42 @@ You made separate plots for each variable but I want them all in one figure so I
 
 Prompt 24: 
 Can you help me break down the hourly model by seniority and AI usage group? One bar chart per seniority level so I can see where the margin collapses.
+
+## Section 7 Questions That Emerged During the Workflow
+
+Are some tasks more likely to generate a loss? 
+
+Where is value created? Where does AI create the most value - by task type and by team?
+
+Where are losses incurred and by whom?
+
+AI -> quality or just speed?
+
+When Does AI Start Hurting the Margin? Is there a point where increasing AI usage makes profit margin worse before it gets better?
+
+Is the hourly pricing model structurally unprofitable, or does it depend on who is doing the work?
+
+Does AI usage reduce the share of loss-making tasks, and by how much compared to low-adoption groups?
+
+Does higher AI usage reduce cost ratio, or does it add overhead that offsets the efficiency gains?
+
+Are senior workers more likely to generate losses than junior ones, and what explains the gap?
+
+Does AI reduce errors and revisions, or does it introduce more back-and-forth in the process?
+
+Is rework ratio a reliable financial risk indicator, or does it not actually predict profit margin?
+
+Which task types benefit most from AI adoption in terms of profit margin, and are there any where it backfires?
+
+Does AI help teams deliver within SLA deadlines, or does it only reduce total delivery time?
+
+Are there tasks where ai_assisted is flagged as False despite a positive ai_usage_pct, and how were they resolved?
+
+Does AI reduce hours spent on a task, or does it only affect how fast the task gets delivered?
+
+How sensitive is the loss rate to rework cost assumptions: does the picture change significantly across optimistic and pessimistic scenarios?
+
+Do teams that use AI heavily maintain quality output, or does the quality index deteriorate as AI usage increases?
+
+What is the optimal AI adoption strategy given all the evidence?
+
