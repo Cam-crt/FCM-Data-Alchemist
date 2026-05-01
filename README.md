@@ -75,11 +75,11 @@ Two columns required standardisation before analysis.
 #### the others 
  `client_tier`, `seniority`, `pricing_model`, `task_status`, `workflow_stage`, `content_version`, `legacy_ai_flag`, `scope_change_flag`, `sla_breach`, `deadline_pressure` were inspected and required no cleaning. 
  
-![Countplot of team variable before and after cleaning](images/fig_team_cleaning.png)
-*Figure 1 – Distribution of `team` before and after cleaning (Section 3.1)*
+images/team_before_cleaning.png images\team_after_cleaning.png
+*Figure 1 – Distribution of `team` before and after cleaning*
 
-![Countplot of task_type variable before and after cleaning](images/fig_tasktype_cleaning.png)
-*Figure 2 – Distribution of `task_type` before and after cleaning (Section 3.2)*
+images/task_before_cleaning.png images/task_after_cleaning.png
+*Figure 2 – Distribution of `task_type` before and after cleaning*
 
 ### 2.4 Date Variables Conversion
 
@@ -97,8 +97,8 @@ Missing values were treated column by column, each with a justified strategy:
 - **`billable_hours`** (~2.5% missing): Group-based median imputation by `pricing_model` × `task_type` to preserve business structure.
 - **`delivered_at`**: Left unimputed at this stage; the few tasks marked as delivered but missing `delivered_at` were handled later in feature engineering using mean delivery duration.
 
-![Missing value matrix](images/fig_missing_matrix.png)
-*Figure 3 – Missing value pattern across all columns (Section 5, `missingno` matrix)*
+images/missingvalue_col.png
+*Figure 3 – Missing value pattern across all columns*
 
 ### 2.6 Exploratory Data Analysis (EDA)
 
@@ -111,11 +111,11 @@ Histogram analysis showed strong right-skewness in `hours_spent`, `billable_hour
 
 Categorical distributions were examined via countplots, and boxplots were used to compare `ai_usage_pct` and `outcome_score` across all categorical variables.
 
-![Correlation heatmap](images/fig_correlation_heatmap.png)
-*Figure 4 – Correlation heatmap of all numerical variables (Section 6)*
+images/correlation_heatmap_num.png
+*Figure 4 – Correlation heatmap of all numerical variables*
 
-![Distribution of key numerical variables](images/fig_numerical_distributions.png)
-*Figure 5 – Histograms of `hours_spent`, `revenue`, `ai_usage_pct`, `rework_hours`, `outcome_score`, `cost`, `profit` (Section 6.1)*
+images/numerical_distributions.png
+*Figure 5 – Histograms of `hours_spent`, `revenue`, `ai_usage_pct`, `rework_hours`, `outcome_score`, `cost`, `profit`*
 
 ### 2.7 Feature Engineering
 
@@ -133,8 +133,8 @@ This step covered inconsistency fixes, AI-related variable resolution, and the c
 - 685 rows had `ai_assisted == False` but positive `ai_usage_pct`. These were resolved using a median threshold: rows above the threshold were reclassified as `ai_assisted = True`; rows at or below were set to `ai_usage_pct = 0`.
 - `ai_complexity` was created as the product of `task_complexity_score` and `ai_usage_pct`.
 
-![AI group distribution](images/fig_ai_group_distribution.png)
-*Figure 6 – Distribution of tasks across `ai_group` bins after refinement (Section 7.2.1)*
+images/ai_bins.png
+*Figure 6 – Distribution of  `ai_group` bins after refinement*
 
 **Derived metrics:**
 
@@ -259,67 +259,66 @@ The seniority signal was then decomposed into a three-panel chart of mean profit
 
 **RQ1 – Value creation:** AI-assisted tasks show a higher average profit margin (0.16 vs. 0.08) and lower cost ratio (0.84 vs. 0.92), both significant at the 10% level. Profit margin increases nearly monotonically with AI usage intensity, peaking at ~34% for the 75–100% group. Tasks in the 15–30% usage range are the exception, showing a dip below even the 0–15% group, consistent with a transition-phase effect.
 
-![Profit margin by AI group](images/fig_rq1_profit_margin_ai_group.png)
+images/rq1_profit_margin_ai_group.png
 *Figure 7 – Average profit margin by `ai_group` (RQ1)*
 
-![Profit margin by task type and AI group heatmap](images/fig_rq1_heatmap_tasktype.png)
+images/rq1_heatmap_tasktype.png
 *Figure 8 – Mean profit margin by `task_type` × `ai_group` (RQ1)*
 
-![Profit margin by team and AI group heatmap](images/fig_rq1_heatmap_team.png)
+images/rq1_heatmap_team.png
 *Figure 9 – Mean profit margin by `team` × `ai_group` (RQ1)*
 
-![Profit margin scenario comparison](images/fig_rq1_scenario_comparison.png)
+images/rq1_scenario_comparison.png
 *Figure 10 – Profit margin by `ai_group` under optimistic / normal / pessimistic rework cost scenarios (RQ1)*
 
 ---
 
 **RQ2 – Losses:** Rework hours and rework ratio are significantly higher in AI-assisted tasks (p < 0.01), but loss rate falls monotonically with AI usage: from ~30% in the 0–15% group to ~12% in the 75–100% group. Senior workers lose on 45% of tasks vs. 11% for juniors, likely reflecting task allocation patterns rather than individual performance.
 
-![Loss rate by category](images/fig_rq2_loss_rate_categories.png)
+images/rq2_loss_rate_categories.png
 *Figure 11 – Loss rate by `task_type`, `team`, `seniority`, and `client_tier` (RQ2)*
 
-![Loss rate by AI group](images/fig_rq2_loss_rate_ai_group.png)
+images/rq2_loss_rate_ai_group.png
 *Figure 12 – Loss rate by `ai_group` (RQ2)*
 
-![Cost ratio by AI group](images/fig_rq2_cost_ratio_ai_group.png)
+images/rq2_cost_ratio_ai_group.png
 *Figure 13 – Cost ratio by `ai_group` (RQ2)*
 
 ---
 
 **RQ3 – Quality vs. Speed:** AI-assisted tasks are delivered faster (4.43 vs. 4.91 days, p < 0.01) and breach SLAs less often (38% vs. 47%, p < 0.01). However, `outcome_score` shows no statistically significant difference (p = 0.597). The `quality_index` declines with AI usage while `speed_index` remains stable, suggesting AI accelerates delivery without improving — and possibly slightly reducing — output quality.
 
-![Quality index vs speed index by AI group](images/fig_rq3_quality_speed_index.png)
+images/rq3_quality_speed_index.png
 *Figure 14 – Quality index vs. speed index by `ai_group` (RQ3)*
 
 ---
 
 **RQ4 – Critical threshold:** The rolling average of profit margin briefly turns negative around 20% AI usage. Below that zone, low-AI tasks hold a stable ~6% margin; above 30%, margins recover and grow to ~30% at high usage. Partial adoption (roughly 15–30%) is the riskiest configuration.
 
-![Rolling profit margin threshold](images/fig_rq4_rolling_threshold.png)
+images/rq4_rolling_threshold.png
 *Figure 15 – Rolling average profit margin vs. `ai_usage_pct` with negative zone highlighted (RQ4)*
 
 ---
 
 **Advanced RQ1:** Pearson r = 0.002 (p = 0.891) — no trade-off between speed and quality. The two dimensions are independent.
 
-![Speed vs quality scatter](images/fig_adv_rq1_speed_quality_scatter.png)
+images/adv_rq1_speed_quality_scatter.png
 *Figure 16 – Scatter plot of `speed_index` vs. `quality_index` with regression line (Advanced RQ1)*
 
 ---
 
 **Advanced RQ2:** Pearson r ≈ 0.008 (p = 0.638) in the base scenario. Rework ratio alone is not a reliable financial risk indicator; margin protection should focus on `cost_ratio` and pricing.
 
-![Rework ratio vs profit margin scenarios](images/fig_adv_rq2_rework_scenarios.png)
+images/adv_rq2_rework_scenarios.png
 *Figure 17 – Rework ratio vs. profit margin under three cost scenarios (Advanced RQ2)*
 
 ---
 
 **Advanced RQ3:** The hourly pricing model is structurally unsustainable for senior workers below 75% AI usage. Junior workers never collapse; mid-level workers go negative between 15–75% AI usage.
 
-![Hourly model seniority breakdown](images/fig_adv_rq3_seniority_ai_group.png)
+images/adv_rq3_seniority_ai_group.png
 *Figure 18 – Mean profit margin by `ai_group` for junior / mid / senior under the hourly pricing model (Advanced RQ3)*
 
----
 
 ### Summary Table – Profit Margin by AI Usage Group
 
@@ -330,10 +329,6 @@ The seniority signal was then decomposed into a three-panel chart of mean profit
 | 30–50% | ~0.15 | ~22% |
 | 50–75% | ~0.23 | ~18% |
 | 75–100% | ~0.34 | ~12% |
-
-*All figures are approximate; exact values are generated by the notebook.*
-
----
 
 ## Section 5 Conclusions
 
@@ -347,10 +342,90 @@ Several questions remain open. First, the dataset comes from a single company, w
 
 ## Section 6 Prompt AI
 
-[^1]
+### PROMPTS FOR AI BUCKETS:
 
-[^2]
+Prompt 1: 
+I want to bin ai_usage_pct into groups to use it as a categorical variable in bar plots. How many buckets should I use?
 
-[^3]
+Prompt 2: 
+You suggested 4 buckets but there’s a lot of observations in the 0-25% and 25-50% range, wouldn’t it make more sense to split those further? I don’t want to lose detail there. Would unequal bucket sizes be an issue?
 
-[^4]
+### ROMPTS FOR VALUE METRICS:
+
+Prompt 3: 
+I have a dataframe with several performance metrics and a bool column ai_assisted. I want to statistically test whether using AI has a significant effect on those metrics. What’s a good approach?
+
+Prompt 4: 
+Ok great so t-test makes sense. My metrics are profit_margin, profit_per_hour, cost_ratio, efficiency, revenue. Can you show me how to split the final_df by ai_assisted and run a ttest_ind for each one?
+
+Prompt 5: 
+The output only prints p-value but I want to also see the values for both groups side by side, so I can actually tell if AI is better or worse, not just whether it’s significant
+
+Prompt 6: 
+You used only alfa = 0.01 but I want to show all three thresholds: 0.10, 0.05 and 0.01, since at 0.01 none of the results are significant. A result significant at 0.10 or 0.05 but not 0.01 is still useful information for me, I don’t want to throw it away.
+
+### PROMPT FOR ESTIMATING REWORK HOURS COSTS
+
+Prompt 7: 
+I want to check if rework hurts profit margin but I’m not sure what rework actually costs the company and if extra hours are actually paid (it seems that). So beside the case that these extra hours are not paid I’m thinking to build three scenarios with different cost assumptions (normal, pessimistic and optimistic) instead of making the assumptions that the extra hours are paid ad the “normal” ones. Do you think that it could be a good strategy?
+
+Prompt 8:
+Ok now plot the three scenarios side by side (3 subplots) as bar charts by ai_group, with a zero line so I can immediately see which groups go negative in each case.
+
+### PROMPT FOR LOSS METRICS
+
+Prompt 9: 
+Can you do the same thing used yesterday (t-test for value metrics) but for loss metrics: revisions, errors, rework_hours, rework_ratio, error_rate. Please use the same structure and the same thresholds.
+
+Prompt 10: 
+Do the same for testing speed metrics: hours_spent, delivery_time and sla_breach. Consider that sla_breach is a binary variable (0/1), so I can’t use a t-test on it. What test should I use instead?
+
+### PROMPT FOR QUALITY VS SPEED DECOMPOSITION
+
+Prompt 11: 
+I have outcome_score and rework_ratio and I want to merge them into a single quality index. Same for speed: I have delivery_time and sla_days. The problem is that they’re on different scales so I can’t just average them. How do I normalize first?
+
+Prompt 12: 
+You normalized speed as sla_ratio_norm directly but that means higher values = slower, which is counterintuitive. I want the speed index to be higher when the task is faster, so I need to “reverse” it.
+
+### PROMPT FOR TRESHOLD ANALYSIS
+
+Prompt 13: 
+I want to analyze at what point AI usage starts actually hurting profit margin like finding the threshold where it turns negative. I’ve never done threshold analysis before, what are the options?
+
+Prompt 14: 
+Ok can you give me the code for the main options you mentioned? I want to see them on ai_usage_pct vs profit_margin.
+
+Prompt 15: 
+Some of these approaches are too complex for what I need and the plots aren’t clear enough. I just want to visually see where the margin goes negative as AI usage increases.
+
+Prompt 16: 
+What’s the simplest way to smooth the data and plot it so the trend is readable? I have a lot of noise in the raw values.
+
+Prompt 17: 
+Add vertical dashed red lines to mark where the margin goes below zero and where it comes back up.
+
+Prompt 18: 
+Also fill the negative zone in red and keep the rest blue, so it’s immediately clear where the losses are.
+
+### PROMPT FOR PEARSON (ADVANCED QUESTION 1)
+
+Prompt 19: 
+I want to check if there’s a trade-off between speed and quality using correlation between speed_index and quality_index. Is Pearson right or should I use something else?
+
+Prompt 20: 
+Ok, run the Pearson correlation and plot a scatter so I can see the relationship visually too.
+
+Prompt 21: 
+Add a regression line to the scatter, the dots alone are too noisy to read the trend.
+
+### PROMPT FOR HOURLY BASED MODEL
+
+Prompt 22: 
+I want to understand why the hourly model is losing money. Can you compare it against fixed and value_based on a few variables (rework, errors, hours spent, seniority, complexity, billable hours) to see where the difference is.
+
+Prompt 23: 
+You made separate plots for each variable but I want them all in one figure so I can compare at a glance.
+
+Prompt 24: 
+Can you help me break down the hourly model by seniority and AI usage group? One bar chart per seniority level so I can see where the margin collapses.
