@@ -74,12 +74,15 @@ Two columns required standardisation before analysis.
 
 #### the others 
  `client_tier`, `seniority`, `pricing_model`, `task_status`, `workflow_stage`, `content_version`, `legacy_ai_flag`, `scope_change_flag`, `sla_breach`, `deadline_pressure` were inspected and required no cleaning. 
- 
-images/team_before_cleaning.png images\team_after_cleaning.png
-*Figure 1 – Distribution of `team` before and after cleaning*
 
-images/task_before_cleaning.png images/task_after_cleaning.png
+*Figure 1 – Distribution of `team` before and after cleaning*
+![Figure 1a](images/team_before_cleaning.png) 
+![Figure 1a](images/team_after_cleaning.png) 
+
+
 *Figure 2 – Distribution of `task_type` before and after cleaning*
+![Figure 2a](images/task_before_cleaning.png)
+![Figure 2b](images/task_after_cleaning.png)
 
 ### 2.4 Date Variables Conversion
 
@@ -97,7 +100,7 @@ Missing values were treated column by column, each with a justified strategy:
 - **`billable_hours`** (~2.5% missing): Group-based median imputation by `pricing_model` × `task_type` to preserve business structure.
 - **`delivered_at`**: Left unimputed at this stage; the few tasks marked as delivered but missing `delivered_at` were handled later in feature engineering using mean delivery duration.
 
-images/missingvalue_col.png
+![Figure 3](images/missingvalue_col.png)
 *Figure 3 – Missing value pattern across all columns*
 
 ### 2.6 Exploratory Data Analysis (EDA)
@@ -111,10 +114,11 @@ Histogram analysis showed strong right-skewness in `hours_spent`, `billable_hour
 
 Categorical distributions were examined via countplots, and boxplots were used to compare `ai_usage_pct` and `outcome_score` across all categorical variables.
 
-images/correlation_heatmap_num.png
+![Figure 4](images/correlation_heatmap_num.png)
 *Figure 4 – Correlation heatmap of all numerical variables*
 
-images/numerical_distributions.png
+
+![Figure 5](images/numerical_distribution.png)
 *Figure 5 – Histograms of `hours_spent`, `revenue`, `ai_usage_pct`, `rework_hours`, `outcome_score`, `cost`, `profit`*
 
 ### 2.7 Feature Engineering
@@ -133,7 +137,7 @@ This step covered inconsistency fixes, AI-related variable resolution, and the c
 - 685 rows had `ai_assisted == False` but positive `ai_usage_pct`. These were resolved using a median threshold: rows above the threshold were reclassified as `ai_assisted = True`; rows at or below were set to `ai_usage_pct = 0`.
 - `ai_complexity` was created as the product of `task_complexity_score` and `ai_usage_pct`.
 
-images/ai_bins.png
+![Figure 6](images/ai_bins.png)
 *Figure 6 – Distribution of  `ai_group` bins after refinement*
 
 **Derived metrics:**
@@ -259,66 +263,65 @@ The seniority signal was then decomposed into a three-panel chart of mean profit
 
 **RQ1 – Value creation:** AI-assisted tasks show a higher average profit margin (0.16 vs. 0.08) and lower cost ratio (0.84 vs. 0.92), both significant at the 10% level. Profit margin increases nearly monotonically with AI usage intensity, peaking at ~34% for the 75–100% group. Tasks in the 15–30% usage range are the exception, showing a dip below even the 0–15% group, consistent with a transition-phase effect.
 
-images/rq1_profit_margin_ai_group.png
+![Figure 7](images/rq1_profit_margin_ai_group.png)
 *Figure 7 – Average profit margin by `ai_group` (RQ1)*
 
-images/rq1_heatmap_tasktype.png
+
+![Figure 8](images/rq1_heatmap_tasktype.png)
 *Figure 8 – Mean profit margin by `task_type` × `ai_group` (RQ1)*
 
-images/rq1_heatmap_team.png
+
+![Figure 9](images/rq1_heatmap_team.png)
 *Figure 9 – Mean profit margin by `team` × `ai_group` (RQ1)*
 
-images/rq1_scenario_comparison.png
+
+![Figure 10](images/rq1_scenario_comparison.png)
 *Figure 10 – Profit margin by `ai_group` under optimistic / normal / pessimistic rework cost scenarios (RQ1)*
 
----
+
 
 **RQ2 – Losses:** Rework hours and rework ratio are significantly higher in AI-assisted tasks (p < 0.01), but loss rate falls monotonically with AI usage: from ~30% in the 0–15% group to ~12% in the 75–100% group. Senior workers lose on 45% of tasks vs. 11% for juniors, likely reflecting task allocation patterns rather than individual performance.
 
-images/rq2_loss_rate_categories.png
+![Figure 11](images/rq2_loss_rate_categories.png)
 *Figure 11 – Loss rate by `task_type`, `team`, `seniority`, and `client_tier` (RQ2)*
 
-images/rq2_loss_rate_ai_group.png
+
+![Figure 12](images/rq2_loss_rate_ai_group.png)
 *Figure 12 – Loss rate by `ai_group` (RQ2)*
 
-images/rq2_cost_ratio_ai_group.png
+
+![Figure 13](images/rq2_cost_ratio_ai_group.png)
 *Figure 13 – Cost ratio by `ai_group` (RQ2)*
 
----
 
 **RQ3 – Quality vs. Speed:** AI-assisted tasks are delivered faster (4.43 vs. 4.91 days, p < 0.01) and breach SLAs less often (38% vs. 47%, p < 0.01). However, `outcome_score` shows no statistically significant difference (p = 0.597). The `quality_index` declines with AI usage while `speed_index` remains stable, suggesting AI accelerates delivery without improving — and possibly slightly reducing — output quality.
 
-images/rq3_quality_speed_index.png
+![Figure 14](images/rq3_quality_speed_index.png)
 *Figure 14 – Quality index vs. speed index by `ai_group` (RQ3)*
 
----
 
 **RQ4 – Critical threshold:** The rolling average of profit margin briefly turns negative around 20% AI usage. Below that zone, low-AI tasks hold a stable ~6% margin; above 30%, margins recover and grow to ~30% at high usage. Partial adoption (roughly 15–30%) is the riskiest configuration.
 
-images/rq4_rolling_threshold.png
+![Figure 15](images/rq4_rolling_threshold.png)
 *Figure 15 – Rolling average profit margin vs. `ai_usage_pct` with negative zone highlighted (RQ4)*
 
----
 
 **Advanced RQ1:** Pearson r = 0.002 (p = 0.891) — no trade-off between speed and quality. The two dimensions are independent.
 
-images/adv_rq1_speed_quality_scatter.png
+![Figure 16](images/adv_rq1_speed_quality_scatter.png)
 *Figure 16 – Scatter plot of `speed_index` vs. `quality_index` with regression line (Advanced RQ1)*
-
----
 
 **Advanced RQ2:** Pearson r ≈ 0.008 (p = 0.638) in the base scenario. Rework ratio alone is not a reliable financial risk indicator; margin protection should focus on `cost_ratio` and pricing.
 
-images/adv_rq2_rework_scenarios.png
+
+![Figure 17](images/adv_rq2_rework_scenarios.png)
 *Figure 17 – Rework ratio vs. profit margin under three cost scenarios (Advanced RQ2)*
 
----
 
 **Advanced RQ3:** The hourly pricing model is structurally unsustainable for senior workers below 75% AI usage. Junior workers never collapse; mid-level workers go negative between 15–75% AI usage.
 
-images/adv_rq3_seniority_ai_group.png
+![Figure 18](images/adv_rq3_seniority_ai_group.png)
 *Figure 18 – Mean profit margin by `ai_group` for junior / mid / senior under the hourly pricing model (Advanced RQ3)*
-
 
 ### Summary Table – Profit Margin by AI Usage Group
 
